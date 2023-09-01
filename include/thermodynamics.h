@@ -397,8 +397,9 @@ struct dark_thermo_diffeq_workspace {
   double dark_x_noreio;
 
   double dark_Tmat;
-
   double dark_x_H;
+  double Sinv_idm_dr;
+  double dmu_idm_dr;
 
   int index_dark_ap_saha;
   int index_dark_ap_bolt;

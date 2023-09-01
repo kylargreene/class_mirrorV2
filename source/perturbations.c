@@ -5458,7 +5458,7 @@ int perturbations_initial_conditions(struct precision * ppr,
 
     if (pba->has_idr == _TRUE_) {
       rho_r += ppw->pvecback[pba->index_bg_rho_idr];
-      rho_nu += ppw->pvecback[pba->index_bg_rho_idr];
+      //rho_nu += ppw->pvecback[pba->index_bg_rho_idr];
     }
 
     if (pba->has_ncdm == _TRUE_) {
@@ -10544,3 +10544,4 @@ int perturbations_rsa_idr_delta_and_theta(
   return _SUCCESS_;
 
 }
+
