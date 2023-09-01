@@ -174,12 +174,25 @@ struct thermodynamics
   /** parameters for varying fundamental constants */
 
   short has_varconst; /**< presence of varying fundamental constants? */
+  short has_adm;
 
   //@}
 
   /** @name - all indices for the vector of thermodynamical (=th) quantities stored in table */
 
   //@{
+  //START MIRROR EDIT
+  //short has_adm;              // flag for adm 
+
+  int index_th_dark_xe;       // ionization fraction of dark electrons
+  int index_th_dark_T_adm;    // dark baryon temperature [K]
+  int index_th_dark_wb;       // equation of state parameter for dark baryons
+  int index_th_dark_cb2;      // adiabatic sound speed of dark baryons
+  int index_th_dark_dkappa;   // dark thomson scattering rate
+  int index_th_dark_ddkappa;
+  int index_th_dark_dddkappa;
+
+  //END MIRROR EDIT
 
   int index_th_xe;            /**< ionization fraction \f$ x_e \f$ */
   int index_th_dkappa;        /**< Thomson scattering rate \f$ d \kappa / d \tau\f$ (units 1/Mpc) */
@@ -289,6 +302,12 @@ struct thermodynamics
   double fHe;  /**< \f$ f_{He} \f$: primordial helium-to-hydrogen nucleon ratio 4*n_He/n_H */
   double n_e;  /**< total number density of electrons today (free or not) */
 
+
+  //START MIRROR EDIT
+  
+  double dark_n_e; // number density of dark electrons today
+
+  //END MIRROR EDIT
   //@}
 
   /** @name - parameters needed for idm */
@@ -357,6 +376,49 @@ struct thermo_vector {
   int * used_in_output; /**< boolean array specifying which quantities enter in the calculation of output functions */
 
 };
+
+struct dark_thermo_vector {
+
+  int dark_ti_size;
+
+  int index_ti_dark_x_H;
+  int index_ti_dark_D_Tmat;
+
+  double * d_y;
+  double * d_dy;
+
+  int * d_used_in_output;
+
+};
+
+struct dark_thermo_diffeq_workspace {
+
+  double dark_x;
+  double dark_x_noreio;
+
+  double dark_Tmat;
+
+  double dark_x_H;
+
+  int index_dark_ap_saha;
+  int index_dark_ap_bolt;
+
+  int dark_ap_current;
+  int dark_ap_size;
+
+  double * dark_ap_z_limits;
+  double * dark_ap_z_limits_delta;
+
+  double dark_z_recombination;
+
+  struct thermohyrec * dark_phyrec;
+  struct thermorecfast * dark_precfast;
+
+  struct dark_thermo_vector * d_ptv;
+
+  int require_dark_H;
+};
+
 
 /**
  * Workspace for differential equation of thermodynamics
@@ -460,6 +522,14 @@ struct thermo_workspace {
   double SIunit_nH0;   /**< defined as in RECFAST : Hydrogen number density today in SI units*/
   double Tcmb;         /**< CMB temperature today in Kelvin */
 
+  //START MIRROR EDIT
+
+  double SIunit_dark_nH0;          // number density of hydrogen-like dark atoms today in SI units
+  double const_NR_dark_numberdens; // prefactor in number density of nonrelativistic species in dark sector 
+  double const_dark_Tion_H;        //dark hydrogen ionization energy in [K]
+  double Tadr;                     //Dark photon temperature today in [K]
+  //
+
   /* Most important and useful constants */
   double const_NR_numberdens;  /**< prefactor in number density of nonrelativistic species */
   double const_Tion_H;         /**< ionization energy for HI as temperature */
@@ -476,6 +546,7 @@ struct thermo_workspace {
   struct thermo_diffeq_workspace * ptdw;        /**< pointer to workspace for differential equations */
   struct thermo_reionization_parameters * ptrp; /**< pointer to workspace for reionization */
 
+  struct dark_thermo_diffeq_workspace * d_ptdw;
 };
 
 /**
@@ -564,6 +635,41 @@ extern "C" {
 
   int thermodynamics_workspace_free(struct thermodynamics* pth, struct thermo_workspace * ptw);
 
+  //START MIRROR EDIT
+
+  int dark_thermodynamics_vector_init(struct precision * ppr,
+                                      struct background * pba,
+                                      struct thermodynamics * pth,
+                                      double z,
+                                      struct thermo_workspace * ptw);
+
+  int dark_thermodynamics_ionization_fractions(
+                                          double z,
+                                          double * y,
+                                          struct background * pba,
+                                          struct thermodynamics * pth,
+                                          struct thermo_workspace * ptw,
+                                          int current_dark_ap
+                                          );
+
+  int dark_thermodynamics_derivs(
+                                double mz,
+                                double * d_y,
+                                double * d_dy,
+                                void * parameters_and_workspace,
+                                ErrorMsg error_message
+                                );
+
+  int dark_thermodynamics_sources(double mz,
+                             double * d_y,
+                             double * d_dy,
+                             int index_z,
+                             void * thermo_parameters_and_workspace,
+                             ErrorMsg error_message
+                             );
+
+
+  //END MIRROR EDIT
   int thermodynamics_vector_init(struct precision * ppr,
                                  struct background * pba,
                                  struct thermodynamics * pth,
@@ -603,6 +709,7 @@ extern "C" {
 
   int thermodynamics_vector_free(struct thermo_vector * tv);
 
+  int dark_thermodynamics_vector_free(struct dark_thermo_vector * tv);
 
   int thermodynamics_calculate_conformal_drag_time(struct background* pba,
                                                    struct thermodynamics* pth,
@@ -737,5 +844,17 @@ extern "C" {
 #define _Z_REC_MIN_ 500.
 
 //@}
+
+//START MIRROR EDIT
+
+#define _dark_m_e_ (pba->dark_m_e*_m_e_) // units [Kg]
+#define _dark_m_p_ (pba->dark_m_p*_m_p_) // units [Kg]
+#define _dark_fs_  (pba->dark_fs*0.00729735) // unitless
+#define _dark_sigma_ (pow(pba->dark_fs,2.)/pow(pba->dark_m_e,2.)*_sigma_) // units [m^2]
+#define _dark_mu_ (_dark_m_e_*_dark_m_p_)/(_dark_m_e_+_dark_m_p_) // units [Kg]
+#define _dark_m_H_ (_dark_m_e_ + _dark_m_p_ - (_dark_fs_*_dark_fs_*_dark_m_e_/2)) //units [Kg]
+#define _dark_L_H_ion_ (1.096787737e7*(pba->dark_m_e)*pow(pba->dark_fs,2.)) //units [K]
+
+//END MIRROR EDIT
 
 #endif

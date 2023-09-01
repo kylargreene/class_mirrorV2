@@ -434,6 +434,19 @@ int background_functions(
   p_tot += 0;
   rho_m += pvecback[pba->index_bg_rho_b];
 
+  //START MIRROR EDIT
+  if (pba->has_adm == _TRUE_) {
+    pvecback[pba->index_bg_rho_adm] = pba->Omega0_adm * pow(pba->H0,2)/pow(a,3);
+    rho_tot += pvecback[pba->index_bg_rho_adm];
+    p_tot += 0.;
+    rho_m += pvecback[pba->index_bg_rho_adm];
+
+    pvecback[pba->index_bg_rho_adr] = pba->Omega0_adr * pow(pba->H0,2)/pow(a,4);
+    rho_tot += pvecback[pba->index_bg_rho_adr];
+    p_tot += (1./3.) * pvecback[pba->index_bg_rho_adr];
+    rho_r += pvecback[pba->index_bg_rho_adr];
+  }
+
   /* cdm */
   if (pba->has_cdm == _TRUE_) {
     pvecback[pba->index_bg_rho_cdm] = pba->Omega0_cdm * pow(pba->H0,2) / pow(a,3);
@@ -445,9 +458,9 @@ int background_functions(
   /* idm */
   if (pba->has_idm == _TRUE_) {
     pvecback[pba->index_bg_rho_idm] = pba->Omega0_idm * pow(pba->H0,2) / pow(a,3);
-    rho_tot += pvecback[pba->index_bg_rho_idm];
-    p_tot += 0.;
-    rho_m += pvecback[pba->index_bg_rho_idm];
+    //rho_tot += pvecback[pba->index_bg_rho_idm];
+    //p_tot += 0.;
+    //rho_m += pvecback[pba->index_bg_rho_idm];
   }
 
   /* dcdm */
@@ -567,9 +580,9 @@ int background_functions(
   /* interacting dark radiation */
   if (pba->has_idr == _TRUE_) {
     pvecback[pba->index_bg_rho_idr] = pba->Omega0_idr * pow(pba->H0,2) / pow(a,4);
-    rho_tot += pvecback[pba->index_bg_rho_idr];
-    p_tot += (1./3.) * pvecback[pba->index_bg_rho_idr];
-    rho_r += pvecback[pba->index_bg_rho_idr];
+    //rho_tot += pvecback[pba->index_bg_rho_idr];
+    //p_tot += (1./3.) * pvecback[pba->index_bg_rho_idr];
+    //rho_r += pvecback[pba->index_bg_rho_idr];
   }
 
   /** - compute expansion rate H from Friedmann equation: this is the
@@ -693,8 +706,12 @@ int background_w_fld(
     // find a_equality (needed because EDE tracks first radiation, then matter)
     Omega_r = pba->Omega0_g * (1. + 3.044 * 7./8.*pow(4./11.,4./3.)); // assumes LambdaCDM + eventually massive neutrinos so light that they are relativistic at equality; needs to be generalised later on.
     Omega_m = pba->Omega0_b;
+    //START MIRROR EDIT
+    if (pba->has_adm == _TRUE_){
+      Omega_m += pba->Omega0_adm;
+    }
     if (pba->has_cdm == _TRUE_) Omega_m += pba->Omega0_cdm;
-    if (pba->has_idm == _TRUE_) Omega_m += pba->Omega0_idm;
+    //if (pba->has_idm == _TRUE_) Omega_m += pba->Omega0_idm;
     if (pba->has_dcdm == _TRUE_)
       class_stop(pba->error_message,"Early Dark Energy not compatible with decaying Dark Matter because we omitted to code the calculation of a_eq in that case, but it would not be difficult to add it if necessary, should be a matter of 5 minutes");
     a_eq = Omega_r/Omega_m; // assumes a flat universe with a=1 today
@@ -984,6 +1001,14 @@ int background_indices(
   pba->has_curvature = _FALSE_;
   pba->has_varconst  = _FALSE_;
 
+  //START MIRROR EDIT
+  pba->has_adm = _FALSE_;
+ 
+  if (pba->Omega0_adm != 0.){
+    pba->has_adm = _TRUE_;
+  }
+
+  //END MIRROR EDIT
   if (pba->Omega0_cdm != 0.)
     pba->has_cdm = _TRUE_;
 
@@ -1097,6 +1122,14 @@ int background_indices(
   /* - put here additional ingredients that you want to appear in the
      normal vector */
   /*    */
+
+  //START MIRROR EDIT
+  class_define_index(pba->index_bg_rho_adm, pba->has_adm, index_bg,1);
+
+  class_define_index(pba->index_bg_rho_adr, pba->has_adm, index_bg,1);
+  //END MIRROR EDIT
+
+
   /*    */
 
   /* - end of indices in the normal vector of background values */
@@ -1849,9 +1882,15 @@ int background_checks(
 
     /* contribution of interacting dark radiation _idr to N_eff */
     if (pba->has_idr == _TRUE_) {
-      N_dark = pba->Omega0_idr/7.*8./pow(4./11.,4./3.)/pba->Omega0_g;
+      //N_dark = pba->Omega0_idr/7.*8./pow(4./11.,4./3.)/pba->Omega0_g;
+      //printf(" -> dark radiation Delta Neff %e\n",N_dark);
+    }
+    // START MIRROR EDIT
+    if (pba->has_adm == _TRUE_) {
+      N_dark = pba->Omega0_adr/7.*8./pow(4./11.,4./3.)/pba->Omega0_g;
       printf(" -> dark radiation Delta Neff %e\n",N_dark);
     }
+    // END MIRROR EDIT
   }
 
   return _SUCCESS_;
@@ -2095,8 +2134,11 @@ int background_solve(
   pba->Omega0_nfsm =  pba->Omega0_b;
   if (pba->has_cdm == _TRUE_)
     pba->Omega0_nfsm += pba->Omega0_cdm;
+  if (pba->has_adm == _TRUE_) {
+    pba->Omega0_nfsm += pba->Omega0_adm;
+  }
   if (pba->has_idm == _TRUE_)
-    pba->Omega0_nfsm += pba->Omega0_idm;
+    //pba->Omega0_nfsm += pba->Omega0_idm;
   if (pba->has_dcdm == _TRUE_)
     pba->Omega0_nfsm += pba->Omega0_dcdm;
   for (n_ncdm=0;n_ncdm<pba->N_ncdm; n_ncdm++) {
@@ -2199,8 +2241,13 @@ int background_initial_conditions(
   if (pba->has_ur == _TRUE_) {
     Omega_rad += pba->Omega0_ur;
   }
+  //START MIRROR EDIT
+  if (pba->has_adm == _TRUE_) {
+    Omega_rad += pba->Omega0_adr;
+  }
+  //END MIRROR EDIT
   if (pba->has_idr == _TRUE_) {
-    Omega_rad += pba->Omega0_idr;
+    //Omega_rad += pba->Omega0_idr;
   }
   rho_rad = Omega_rad*pow(pba->H0,2)/pow(a,4);
   if (pba->has_ncdm == _TRUE_) {
@@ -2454,7 +2501,10 @@ int background_output_titles(
   class_store_columntitle(titles,"(.)rho_crit",_TRUE_);
   class_store_columntitle(titles,"(.)rho_dcdm",pba->has_dcdm);
   class_store_columntitle(titles,"(.)rho_dr",pba->has_dr);
-
+  //START MIRROR EDIT
+  class_store_columntitle(titles,"(*)rho_adm",pba->has_adm);
+  class_store_columntitle(titles,"(*)rho_adr",pba->has_adm);
+  //END MIRROR EDIT
   class_store_columntitle(titles,"(.)rho_scf",pba->has_scf);
   class_store_columntitle(titles,"(.)p_scf",pba->has_scf);
   class_store_columntitle(titles,"(.)p_prime_scf",pba->has_scf);
@@ -2527,7 +2577,10 @@ int background_output_data(
     class_store_double(dataptr,pvecback[pba->index_bg_rho_crit],_TRUE_,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_dcdm],pba->has_dcdm,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_dr],pba->has_dr,storeidx);
-
+    //START MIRROR EDIT
+    class_store_double(dataptr,pvecback[pba->index_bg_rho_adm],pba->has_adm,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_rho_adr],pba->has_adm,storeidx);
+    //END MIRROR EDIT
     class_store_double(dataptr,pvecback[pba->index_bg_rho_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_p_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_p_prime_scf],pba->has_scf,storeidx);
@@ -2626,11 +2679,16 @@ int background_derivs(
   /** - solve second order growth equation \f$ [D''(\tau)=-aHD'(\tau)+3/2 a^2 \rho_M D(\tau) \f$
       written as \f$ dD/dloga = D' / (aH) \f$ and \f$ dD'/dloga = -D' + (3/2) (a/H) \rho_M D \f$ */
   rho_M = pvecback[pba->index_bg_rho_b];
+  //START MIRROR EDIT
+  if (pba->has_adm == _TRUE_) {
+    rho_M += pvecback[pba->index_bg_rho_adm];
+  }
+  //END MIRROR EDIT
   if (pba->has_cdm == _TRUE_) {
     rho_M += pvecback[pba->index_bg_rho_cdm];
   }
   if (pba->has_idm == _TRUE_){
-    rho_M += pvecback[pba->index_bg_rho_idm];
+    //rho_M += pvecback[pba->index_bg_rho_idm];
   }
 
   dy[pba->index_bi_D] = y[pba->index_bi_D_prime]/a/H;
@@ -2801,7 +2859,7 @@ int background_output_budget(
     }
     if (pba->has_idm == _TRUE_){
       class_print_species("Interacting DM - idr,b,g",idm);
-      budget_matter+=pba->Omega0_idm;
+      //budget_matter+=pba->Omega0_idm;
     }
     if (pba->has_dcdm == _TRUE_) {
       class_print_species("Decaying Cold Dark Matter",dcdm);
@@ -2826,13 +2884,20 @@ int background_output_budget(
       class_print_species("Ultra-relativistic relics",ur);
       budget_radiation+=pba->Omega0_ur;
     }
+
+    //START MIRROR EDIT
+    if (pba->has_adm == _TRUE_) {
+      budget_radiation += pba->Omega0_adr;
+      budget_matter += pba->Omega0_adm;
+    }
+    //END MIRROR EDIT
     if (pba->has_dr == _TRUE_) {
       class_print_species("Dark Radiation (from decay)",dr);
       budget_radiation+=pba->Omega0_dr;
     }
     if (pba->has_idr == _TRUE_) {
       class_print_species("Interacting Dark Radiation",idr);
-      budget_radiation+=pba->Omega0_idr;
+      //budget_radiation+=pba->Omega0_idr;
     }
 
     if ((pba->has_lambda == _TRUE_) || (pba->has_fld == _TRUE_) || (pba->has_scf == _TRUE_) || (pba->has_curvature == _TRUE_)) {

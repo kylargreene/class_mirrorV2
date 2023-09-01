@@ -124,6 +124,13 @@ class_precision_parameter(thermo_z_initial,double,5.e6)
  * redshift)
  */
 class_precision_parameter(thermo_z_initial_if_idm,double,1.e9)
+
+//START MIRROR EDIT
+
+class_precision_parameter(thermo_z_initial_if_adm,double,1.e9)
+
+//END MIRROR EDIT
+
 /**
  * The switch z for the recfast calculation towards linear sampling
  */

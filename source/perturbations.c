@@ -742,6 +742,26 @@ int perturbations_init(
       printf("Computing sources\n");
   }
 
+  //START MIRROR EDITS
+  //this block of code will turn the native idm and idr flags on, and
+  //use them in place of custom made code for the perturbations
+
+  if (pba->has_adm == _TRUE_){
+
+    //pba->has_idm = _TRUE_;
+    //pba->has_idr = _TRUE_;
+    //pth->has_idm_dr = _TRUE_;
+    //pth->n_index_idm_dr = 2;
+    
+    
+
+  }
+
+  //END MIRROR EDITS
+
+
+
+
   class_test((ppt->gauge == synchronous) && (pba->has_cdm == _FALSE_),
              ppt->error_message,
              "In the synchronous gauge, it is not self-consistent to assume no CDM: the later is used to define the initial timelike hypersurface. You can either add a negligible amount of CDM, or switch to newtonian gauge");
@@ -2764,7 +2784,7 @@ int perturbations_workspace_init(
 
   /** Summary: */
 
-  /** - define local variables */
+    /** - define local variables */
 
   int index_mt=0;
   int index_ap;
@@ -8868,6 +8888,7 @@ int perturbations_derivs(double tau,
       S_idm_dr = 4./3. * pvecback[pba->index_bg_rho_idr]/ pvecback[pba->index_bg_rho_idm];
       dmu_idm_dr = pvecthermo[pth->index_th_dmu_idm_dr];
       dmu_idr = pth->b_idr/pth->a_idm_dr*pba->Omega0_idr/pba->Omega0_idm*dmu_idm_dr;
+    //MIRROR EDIT NOTE
     }
     if (pth->has_idm_b == _TRUE_) {
       R_idm_b = pvecthermo[pth->index_th_R_idm_b];

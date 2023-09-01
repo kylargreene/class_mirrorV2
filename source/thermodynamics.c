@@ -144,6 +144,55 @@ int thermodynamics_at_z(
     /* in this regime, variation rate = dkappa/dtau */
     pvecthermo[pth->index_th_rate] = pvecthermo[pth->index_th_dkappa];
 
+    //START MIRROR EDIT
+    if (pba->has_adm == _TRUE_) {
+
+      double dark_x0;
+      //compute ionization fraction, assumed to be constant at large z
+      dark_x0 = pth->thermodynamics_table[(pth->tt_size-1)*pth->th_size+pth->index_th_dark_xe];
+      pvecthermo[pth->index_th_dark_xe] = dark_x0;
+
+      //calculate dark baryon temperature, assumed to be coupled to radiation at large z
+      pvecthermo[pth->index_th_dark_T_adm] = pba->T0_adr*(1.+z);
+      
+      //pvecthermo[pth->index_th_T_idm] = pvecthermo[pth->index_th_dark_T_adm];
+
+      //calculate the baryon equation of state parameter
+      // wb = (k_b/mu) Tb, assuming only hydrogen like dark atoms
+      // CHECK
+      pvecthermo[pth->index_th_dark_wb] = ((_k_B_)/(_c_*_c_*_dark_mu_))*pba->T0_adr*(1.+z);
+      
+      //calculate baryon adiabatic sound speed cb2
+      pvecthermo[pth->index_th_dark_cb2] = pvecthermo[pth->index_th_dark_wb] *4./3.;
+    
+      //pvecthermo[pth->index_th_c2_idm] = pvecthermo[pth->index_th_dark_cb2];
+
+      //calculate the dark thomson scattering rate, and its derivatives
+      pvecthermo[pth->index_th_dark_dkappa] = (1.+z) * (1.+z) * pth->dark_n_e * dark_x0 * _dark_sigma_*_Mpc_over_m_;
+
+      //pvecthermo[pth->index_th_dmu_idm_dr] = pvecthermo[pth->index_th_dark_dkappa];
+
+      pvecthermo[pth->index_th_dark_ddkappa] = -pvecback[pba->index_bg_H] * 2./(1.+z)*pvecthermo[pth->index_th_dark_dkappa];
+
+      //pvecthermo[pth->index_th_ddmu_idm_dr] = pvecthermo[pth->index_th_dark_ddkappa];
+
+      pvecthermo[pth->index_th_dark_dddkappa] = (pvecback[pba->index_bg_H]*pvecback[pba->index_bg_H]/(1.+z)-pvecback[pba->index_bg_H_prime])*2./(1.+z)*pvecthermo[pth->index_th_dark_dkappa];
+
+      //pvecthermo[pth->index_th_dddmu_idm_dr] = pvecthermo[pth->index_th_dark_dddkappa];
+    
+      //pvecthermo[pth->index_th_tau_idr] = pth->thermodynamics_table[(pth->tt_size-1)*pth->th_size+pth->index_th_tau_idr]+pvecthermo[pth->index_th_dmu_idm_dr] * pow(1.+z, - pth->n_index_idm_dr)/(1.-pth->n_index_idm_dr) * (pow(1.+pth->z_table[pth->tt_size-1], pth->n_index_idm_dr -1) - pow(1.+z, pth->n_index_idm_dr -1))/(pvecback[pba->index_bg_H]/(1.+z)/(1.+z));
+
+      //pvecthermo[pth->index_th_tau_idm_dr] = pth->thermodynamics_table[(pth->tt_size-1)*pth->th_size+pth->index_th_tau_idm_dr]+pvecthermo[pth->index_th_dmu_idm_dr] * pow(1.+z, - pth->n_index_idm_dr) * 4./3. * pba->Omega0_idr/pba->Omega0_idm /(-pth->n_index_idm_dr) * (pow(1.+pth->z_table[pth->tt_size-1], pth->n_index_idm_dr) - pow(1.+z, pth->n_index_idm_dr))/(pvecback[pba->index_bg_H]/(1.+z)/(1.+z));
+
+      //pvecthermo[pth->index_th_g_idm_dr] = pvecthermo[pth->index_th_dmu_idm_dr] * 4./3. * pba->Omega0_idr/pba->Omega0_idm * (1.+z) * exp(-pvecthermo[pth->index_th_tau_idm_dr]);
+
+      //pvecthermo[pth->index_th_dmu_idr] = 0.;
+
+      //pvecthermo[pth->index_th_T_idr] = pba->T0_adr* (1+z);
+     
+    }
+    //END MIRROR EDIT
+
     /* Quantities related to idm */
     if (pba->has_idm == _TRUE_) {
 
@@ -303,6 +352,15 @@ int thermodynamics_init(
 
   /** Summary: */
 
+  //START MIRROR EDIT
+  if (pba->has_adm == _TRUE_) {
+    pth->has_adm = pba->has_adm;
+    //pba->has_idm = _FALSE_;
+    //pba->has_idr = _FALSE_;
+    //pth->has_idm_dr = _FALSE_;
+  }
+  //END MIRROR EDIT
+
   /** - define local variables */
 
   /* vector of background values for calling background_at_tau */
@@ -353,6 +411,17 @@ int thermodynamics_init(
 
   /** - infer number of hydrogen nuclei today in m**-3 */
   pth->n_e = 3.*pow(pba->H0 * _c_ / _Mpc_over_m_,2)*pba->Omega0_b/(8.*_PI_*_G_*_m_H_)*(1.-pth->YHe);
+
+  //START MIRROR EDITS
+  if (pba->has_adm == _TRUE_) {
+
+    pth->dark_n_e = 3.*pow(pba->H0 * _c_ / _Mpc_over_m_,2)*pba->Omega0_adm/(8.*_PI_*_G_*_dark_m_H_);
+
+    ppr->thermo_z_initial = ppr->thermo_z_initial_if_adm;
+
+  }
+  //END MIRROR EDITS
+
 
   /** - test whether all parameters are in the correct regime */
   class_call(thermodynamics_checks(ppr,pba,pth),
@@ -714,6 +783,44 @@ int thermodynamics_checks(
   return _SUCCESS_;
 }
 
+//START MIRROR EDIT
+//taken from 2212.02487 and code within. Big thanks to Dr. Jared Barron for his discussion on this
+
+double LambertW1(const double z);
+const int dbgW=0;
+
+double LambertW1(const double z) {
+  int i;
+  const double eps=4.0e-16, em1=0.3678794411714423215955237701614608;
+  double p=1.0,e,t,w,l1,l2;
+  if (z<-em1 || z>=0.0 || isinf(z) || isnan(z)) {
+    fprintf(stderr,"LambertW1: bad argument %g, exiting.\n",z); exit(1);
+  }
+  /* initial approx for iteration... */
+  if (z<-1e-6) { /* series about -1/e */
+    p=-sqrt(2.0*(2.7182818284590452353602874713526625*z+1.0));
+    w=-1.0+p*(1.0+p*(-0.333333333333333333333+p*0.152777777777777777777777));
+  } else { /* asymptotic near zero */
+    l1=log(-z);
+    l2=log(-l1);
+    w=l1-l2+l2/l1;
+  }
+  if (fabs(p)<1e-4) return w;
+  for (i=0; i<10; i++) { /* Halley iteration */
+    e=exp(w);
+    t=w*e-z;
+    p=w+1.0;
+    t/=e*p-0.5*(p+1.0)*t/p;
+    w-=t;
+    if (fabs(t)<eps*(1.0+fabs(w))) return w; /* rel-abs error */
+  }
+  /* should never get here */
+  fprintf(stderr,"LambertW1: No convergence at z=%g, exiting.\n",z);
+  exit(1);
+}
+
+//END MIRROR EDIT
+
 /**
  * Initialize the thermodynamics workspace.
  *
@@ -739,6 +846,9 @@ int thermodynamics_workspace_init(
 
   /** Define local variables */
   int index_ap;
+  //START MIRROR EDIT
+  int index_dark_ap;
+  //END MIRROR EDIT
   /* for varying fundamental constants */
   double alpha = 1., me = 1.;
 
@@ -762,6 +872,17 @@ int thermodynamics_workspace_init(
   /* CMB temperature today in Kelvin */
   ptw->Tcmb = pba->T_cmb;
 
+  //START MIRROR EDIT
+  // current number density of dark hydrogen-like atoms
+  ptw->SIunit_dark_nH0 = 3.*ptw->SIunit_H0*ptw->SIunit_H0*pba->Omega0_adm/(8.*_PI_*_G_*_dark_m_H_);
+  // prefactor in non-relativist number density for temperature (dark sector)
+  ptw->const_NR_dark_numberdens = 2.*_PI_*(_dark_m_e_/_h_P_)*(_k_B_/_h_P_);
+  // ionization energy for dark hydrogen
+  ptw->const_dark_Tion_H = _h_P_*_c_*_dark_L_H_ion_/_k_B_;
+  //
+  ptw->Tadr = pba->T0_adr;
+  //END MIRROR EDIT
+
   /** - relevant constants */
 
   /* Prefactor in non-relativistic number density for temperature -- (2*pi*m_e) and unit conversion */
@@ -772,6 +893,8 @@ int thermodynamics_workspace_init(
   ptw->const_Tion_HeI = _h_P_*_c_*_L_He1_ion_/_k_B_;
   /* Ionization energy for HeII -- temperature equivalent in Kelvin */
   ptw->const_Tion_HeII = _h_P_*_c_*_L_He2_ion_/_k_B_;
+
+  printf("*-> Ionization Energy Ratio (dark/visible): %g\n",ptw->const_Tion_H/ptw->const_dark_Tion_H);
 
   /* the field reionization_optical_depth is computed and filled later */
 
@@ -844,6 +967,50 @@ int thermodynamics_workspace_init(
   ptw->ptdw->ap_z_limits_delta[ptw->ptdw->index_ap_frec] = ppr->recfast_delta_z_full_H_recombination;
   ptw->ptdw->ap_z_limits_delta[ptw->ptdw->index_ap_reio] = ppr->recfast_delta_z_reio;
 
+  // START MIRROR EDIT
+  if (pba->has_adm == _TRUE_) {
+
+    class_alloc(ptw->d_ptdw,
+              sizeof(struct dark_thermo_diffeq_workspace),
+              pth->error_message);
+
+    // initial ionization fraction, we assume only hydrogen-like dark atoms so this is just 1.
+    ptw->d_ptdw->dark_x_noreio = 1.;
+
+    // define the approximation schemes for the dark sector
+    // two schemes are needed: one during equilibrium described by saha,
+    // and one out of equilibrium descrbied by boltzmann processess
+    class_define_index(ptw->d_ptdw->index_dark_ap_saha,_TRUE_,index_dark_ap,1); //saha regime
+    class_define_index(ptw->d_ptdw->index_dark_ap_bolt,_TRUE_,index_dark_ap,1); //boltzmann regime
+
+    ptw->d_ptdw->dark_ap_size=index_dark_ap;
+
+    ptw->d_ptdw->dark_ap_current = ptw->d_ptdw->index_dark_ap_saha;
+
+    class_alloc(ptw->d_ptdw->dark_ap_z_limits,ptw->d_ptdw->dark_ap_size*sizeof(double),pth->error_message);
+
+    double x_threshold_1,c1,c2;
+    x_threshold_1 = 0.999;
+
+    c1 = (x_threshold_1*x_threshold_1/(1-x_threshold_1))*ptw->SIunit_dark_nH0/exp(1.5*log(ptw->const_NR_dark_numberdens*pba->T0_adr));
+    c2 = ptw->const_dark_Tion_H/pba->T0_adr;
+
+    ptw->d_ptdw->dark_z_recombination = -2.*c2/(3.*LambertW1(-0.66667*pow(c1,.66667)*c2));
+
+    ptw->d_ptdw->dark_ap_z_limits[ptw->d_ptdw->index_dark_ap_saha] = ptw->d_ptdw->dark_z_recombination;
+    ptw->d_ptdw->dark_ap_z_limits[ptw->d_ptdw->index_dark_ap_bolt] = 0.;
+
+    printf("*-> Dark sector Saha to Boltzman switch redshift: %g\n",ptw->d_ptdw->dark_z_recombination);
+
+    class_alloc(ptw->d_ptdw->dark_ap_z_limits_delta,ptw->d_ptdw->dark_ap_size*sizeof(double),pth->error_message);
+
+    ptw->d_ptdw->dark_ap_z_limits_delta[ptw->d_ptdw->index_dark_ap_saha] = 50.;
+    ptw->d_ptdw->dark_ap_z_limits_delta[ptw->d_ptdw->index_dark_ap_bolt] = 50.;
+
+  }
+  //END MIRROR EDIT
+
+
   /* With recombination computed by HyRec or Recfast, we need to allocate and initialize the wrappers */
 
   switch (pth->recombination) {
@@ -857,6 +1024,21 @@ int thermodynamics_workspace_init(
     class_call(thermodynamics_hyrec_init(ppr,pba,pth,ptw->SIunit_nH0,pba->T_cmb,ptw->fHe, ptw->ptdw->ap_z_limits[ptw->ptdw->index_ap_brec],ptw->ptdw->phyrec),
                ptw->ptdw->phyrec->error_message,
                pth->error_message);
+
+    // START MIRROR EDIT
+
+    if (pba->has_adm == _TRUE_) {
+    	    
+    class_alloc(ptw->d_ptdw->dark_precfast,
+                sizeof(struct thermorecfast),
+                pth->error_message);
+
+    class_call(recfast_init(ppr,pba,pth,ptw->d_ptdw->dark_precfast,pth->recfast_photoion_mode,0.),
+               ptw->ptdw->precfast->error_message,
+               pth->error_message);
+    }
+    //END MIRROR EDIT
+
     break;
 
   case recfast:
@@ -928,6 +1110,17 @@ int thermodynamics_indices(
   /* Derivatives of baryon sound speed (only computed if some non-minimal tight-coupling schemes is requested) */
   class_define_index(pth->index_th_dcb2,pth->compute_cb2_derivatives,index_th,1);
   class_define_index(pth->index_th_ddcb2,pth->compute_cb2_derivatives,index_th,1);
+  //START MIRROR EDIT
+  if (pba->has_adm == _TRUE_) {
+    class_define_index(pth->index_th_dark_xe,_TRUE_,index_th,1);
+    class_define_index(pth->index_th_dark_T_adm,_TRUE_,index_th,1);
+    class_define_index(pth->index_th_dark_wb,_TRUE_,index_th,1);
+    class_define_index(pth->index_th_dark_cb2,_TRUE_,index_th,1);
+    class_define_index(pth->index_th_dark_dkappa,_TRUE_,index_th,1);
+    class_define_index(pth->index_th_dark_ddkappa,_TRUE_,index_th,1);
+    class_define_index(pth->index_th_dark_dddkappa,_TRUE_,index_th,1);
+  }
+  //END MIRROR EDIT
 
   /* idm quantities  */
   if (pba->has_idm == _TRUE_) {
@@ -1633,6 +1826,74 @@ int thermodynamics_solve(
 
   }
 
+  //START MIRROR EDITS
+
+  printf("*-> Visible recombination complete.\n");
+
+  if (pba->has_adm == _TRUE_) {
+    int index_dark_ap;
+    int dark_interval_number;
+    int index_dark_interval;
+    double * dark_interval_limit;
+
+    class_alloc(dark_interval_limit,(ptw->d_ptdw->dark_ap_size+1)*sizeof(double),pth->error_message);
+
+    dark_interval_number = ptw->d_ptdw->dark_ap_size;
+    dark_interval_limit[0] = mz_output[0];
+    dark_interval_limit[ptw->d_ptdw->dark_ap_size] = mz_output[ptw->Nz_tot-1];
+
+    for(index_dark_ap-0; index_dark_ap < ptw->d_ptdw->dark_ap_size-1;index_dark_ap++) {
+      dark_interval_limit[index_dark_ap+1] = -ptw->d_ptdw->dark_ap_z_limits[index_dark_ap];
+    }
+
+    for (index_dark_interval=0; index_dark_interval<dark_interval_number; index_dark_interval++) {
+
+      ptw->d_ptdw->dark_ap_current = index_dark_interval;
+      //printf("Current dark interval is %d\n", index_dark_interval);
+
+      class_call(dark_thermodynamics_vector_init(ppr,
+                                                 pba,
+                                                 pth,
+                                                 dark_interval_limit[index_dark_interval],
+                                                 ptw),
+                   pth->error_message,
+                   pth->error_message);
+
+    class_call(background_at_z(pba,
+                               -dark_interval_limit[index_dark_interval],
+                               normal_info,
+                               inter_normal,
+                               &(ptw->last_index_back),
+                               pvecback),
+               pba->error_message,
+               pth->error_message);
+
+
+    class_call(generic_evolver(dark_thermodynamics_derivs,
+                                 dark_interval_limit[index_dark_interval],
+                                 dark_interval_limit[index_dark_interval+1],
+                                 ptw->d_ptdw->d_ptv->d_y,
+                                 ptw->d_ptdw->d_ptv->d_used_in_output,
+                                 ptw->d_ptdw->d_ptv->dark_ti_size,
+                                 &tpaw,
+                                 ppr->tol_thermo_integration,
+                                 ppr->smallest_allowed_variation,
+                                 thermodynamics_timescale,  // timescale
+                                 ppr->thermo_integration_stepsize, // stepsize = this number * timescale
+                                 mz_output, // values of z for output
+                                 pth->tt_size, // size of previous array
+                                 dark_thermodynamics_sources, // function for output
+                                 NULL, // print variables
+                                 pth->error_message),
+                 pth->error_message,
+                 pth->error_message);
+
+    }
+
+  }
+  //END MIRROR EDITS
+
+
   /** - Compute reionization optical depth, if not supplied as input parameter */
   if (pth->reio_z_or_tau == reio_z) {
 
@@ -1827,6 +2088,13 @@ int thermodynamics_workspace_free(
 
   free(ptw->ptdw->ap_z_limits);
   free(ptw->ptdw->ap_z_limits_delta);
+  //START MIRROR EDIT
+  if (pth->has_adm == _TRUE_) {
+    free(ptw->d_ptdw->dark_ap_z_limits);
+    free(ptw->d_ptdw->dark_ap_z_limits_delta);
+    free(ptw->d_ptdw->dark_precfast);
+  }
+  //END MIRROR EDIT
 
   switch (pth->recombination) {
 
@@ -2100,6 +2368,93 @@ int thermodynamics_vector_init(
 
   return _SUCCESS_;
 }
+
+//START MIRROR EDIT
+int dark_thermodynamics_vector_init(struct precision * ppr,
+                                    struct background * pba,
+                                    struct thermodynamics * pth,
+                                    double mz,
+                                    struct thermo_workspace * ptw) {
+
+  /** Summary: */
+
+  /** Define local variables */
+  int index_ti;
+  /* ptdw->ptv unallocated if ap_current == index_ap_brec, allocated and filled otherwise */
+  struct dark_thermo_vector * d_ptv;
+  struct dark_thermo_diffeq_workspace * d_ptdw = ptw->d_ptdw;
+
+  double z;
+
+  //printf("inside vector init\n\n");
+
+  class_alloc(d_ptv,sizeof(struct dark_thermo_vector),pth->error_message);
+
+  /* mz = Minus z is inverted*/
+  z = -mz;
+
+  /* Start from no component */
+  index_ti = 0;
+
+  /* Add common indices (Have to be added before) */
+  class_define_index(d_ptv->index_ti_dark_D_Tmat,_TRUE_,index_ti,1);
+
+  if (d_ptdw->dark_ap_current == d_ptdw->index_dark_ap_saha) {
+    //do nothing 
+  }
+  else if (d_ptdw->dark_ap_current == d_ptdw->index_dark_ap_bolt) {
+    class_define_index(d_ptv->index_ti_dark_x_H,_TRUE_,index_ti,1);
+  }
+
+  d_ptv->dark_ti_size = index_ti;
+
+  /* Allocate all arrays used during the evolution */
+  class_calloc(d_ptv->d_y,d_ptv->dark_ti_size,sizeof(double),pth->error_message);
+  class_alloc(d_ptv->d_dy,d_ptv->dark_ti_size*sizeof(double),pth->error_message);
+  class_alloc(d_ptv->d_used_in_output,d_ptv->dark_ti_size*sizeof(int),pth->error_message);
+
+  for (index_ti=0; index_ti<d_ptv->dark_ti_size; index_ti++) {
+    d_ptv->d_used_in_output[index_ti] = _TRUE_;
+  }
+
+  d_ptdw->require_dark_H = _FALSE_;
+
+  if (d_ptdw->dark_ap_current == d_ptdw->index_dark_ap_saha) {
+
+    d_ptdw->dark_Tmat = ptw->Tadr*(1.+z);
+    d_ptdw->d_ptv = d_ptv;
+    d_ptdw->d_ptv->d_y[d_ptdw->d_ptv->index_ti_dark_D_Tmat] = 0.;
+
+    d_ptdw->require_dark_H = _FALSE_;
+
+  }
+  else if (d_ptdw->dark_ap_current == d_ptdw->index_dark_ap_bolt) {
+
+    d_ptdw->dark_Tmat = d_ptdw->d_ptv->d_y[d_ptdw->d_ptv->index_ti_dark_D_Tmat] + ptw->Tadr*(1.+z);
+
+   /* Obtain initial contents of new vector analytically, especially x_H */
+    class_call(dark_thermodynamics_ionization_fractions(z,d_ptdw->d_ptv->d_y,pba,pth,ptw,d_ptdw->dark_ap_current-1),
+               pth->error_message,
+               pth->error_message);
+
+    d_ptv->d_y[d_ptv->index_ti_dark_D_Tmat] = d_ptdw->d_ptv->d_y[d_ptdw->d_ptv->index_ti_dark_D_Tmat];
+    d_ptv->d_y[d_ptv->index_ti_dark_x_H] = d_ptdw->dark_x_H;
+    //printf("dark_x_H %e\n",d_ptv->d_y[d_ptv->index_ti_dark_x_H]);
+
+    class_call(dark_thermodynamics_vector_free(d_ptdw->d_ptv),
+               pth->error_message,
+               pth->error_message);
+
+    d_ptdw->d_ptv = d_ptv;
+
+    d_ptdw->require_dark_H = _TRUE_;
+
+  }
+ 
+  return _SUCCESS_;
+
+}
+//END MIRROR EDIT
 
 /**
  * If the input for reionization is tau_reio, thermodynamics_solve()
@@ -2776,6 +3131,117 @@ int thermodynamics_derivs(
  * @return the error status
  */
 
+//START MIRROR EDITS
+int dark_thermodynamics_derivs(
+                          double mz,
+                          double * d_y,
+                          double * d_dy,
+                          void * parameters_and_workspace,
+                          ErrorMsg error_message
+                          ) {
+
+  int index_ti;
+
+  double z, dark_nH, Hz, dark_Trad, dark_Tmat, dark_x_H, dark_x, dark_alpha, dark_me;
+
+  double dark_rate_gamma_adm, dark_dHdlna, dark_eps, dark_depsdlna;
+
+  /* Shorthand notations for all of the structs */
+  struct thermodynamics_parameters_and_workspace * ptpaw;
+  struct precision * ppr;
+  struct background * pba;
+  struct thermodynamics * pth;
+  double * pvecback;
+  struct thermo_workspace * ptw;
+  struct dark_thermo_diffeq_workspace * d_ptdw;
+  struct dark_thermo_vector * d_ptv;
+  struct thermorecfast * dark_precfast;
+  struct injection * pin;
+  int dark_ap_current;
+
+  z = -mz;
+
+  /* structures */
+  ptpaw = parameters_and_workspace;
+  ppr = ptpaw->ppr;
+  pba = ptpaw->pba;
+  pth = ptpaw->pth;
+  pin = &(pth->in);
+  /* vector of background quantities */
+  pvecback = ptpaw->pvecback;
+  /* thermodynamics workspace & vector */
+  ptw = ptpaw->ptw;
+  d_ptdw = ptw->d_ptdw;
+  d_ptv = d_ptdw->d_ptv;
+  /* pointer to Recfast/HyRec wrappers */
+  dark_precfast = d_ptdw->dark_precfast;
+  /* Approximation flag */
+  dark_ap_current = d_ptdw->dark_ap_current;
+
+  class_call(background_at_z(pba,
+                             z,
+                             long_info,
+                             inter_closeby,
+                             &(ptw->last_index_back),
+                             pvecback),
+             pba->error_message,
+             error_message);
+
+  Hz = pvecback[pba->index_bg_H] * _c_ / _Mpc_over_m_;
+  dark_nH = ptw->SIunit_dark_nH0 * (1.+z) * (1.+z) * (1.+z);
+  dark_Trad = ptw->Tadr * (1.+z);
+  dark_Tmat = d_y[d_ptv->index_ti_dark_D_Tmat] + ptw->Tadr * (1. + z);
+
+  dark_precfast->fsR = pba->dark_fs;
+  dark_precfast->meR = pba->dark_m_e;
+
+  class_call(dark_thermodynamics_ionization_fractions(z,d_y,pba,pth,ptw,dark_ap_current),
+             pth->error_message,
+             error_message);
+
+  dark_x_H = d_ptdw->dark_x_H;
+  dark_x = d_ptdw->dark_x_noreio;
+
+  if (d_ptdw->require_dark_H == _TRUE_){
+/*
+    class_call(hyrec_dx_H_dz(pth,ptw->d_ptdw->dark_phyrec,dark_x_H,0.0,dark_x,dark_nH,z,Hz,dark_Tmat,dark_Trad,dark_alpha,dark_me,&(d_dy[d_ptv->index_ti_dark_x_H])),
+                 ptw->d_ptdw->dark_phyrec->error_message,
+                 error_message);
+*/
+	  
+    class_call(recfast_dx_H_dz(pth,dark_precfast,dark_x_H,dark_x,dark_nH,z,Hz,dark_Tmat,dark_Trad,&(d_dy[d_ptv->index_ti_dark_x_H])),
+                 dark_precfast->error_message,
+                 error_message);
+		 
+  }
+
+  //dark_x = d_ptdw->dark_x_noreio;
+
+  dark_rate_gamma_adm = ( 2. * _dark_sigma_/_dark_m_e_/_c_ ) * ( 4./3. * pvecback[pba->index_bg_rho_adr] * _Jm3_over_Mpc2_ ) * dark_x / (1.+dark_x);
+
+  if (dark_ap_current == d_ptdw->index_dark_ap_saha) {
+
+    dark_dHdlna = (1.+z)*pvecback[pba->index_bg_H_prime]/pvecback[pba->index_bg_H] * _c_ / _Mpc_over_m_;
+    
+    dark_eps = dark_Trad * Hz / dark_rate_gamma_adm;
+    dark_depsdlna = dark_dHdlna/Hz + 3.;
+    d_dy[d_ptdw->d_ptv->index_ti_dark_D_Tmat] = dark_eps * dark_depsdlna / (1.+z);
+
+  }
+  else {
+
+    d_dy[d_ptv->index_ti_dark_D_Tmat] = 2.*dark_Tmat/(1.+z) + dark_rate_gamma_adm * (dark_Tmat - dark_Trad)/(Hz*(1.+z))-ptw->Tadr;
+
+  }
+
+  for (index_ti=0;index_ti<d_ptdw->d_ptv->dark_ti_size;index_ti++) {
+    d_dy[index_ti]=-d_dy[index_ti];
+  }
+
+  return _SUCCESS_;
+}
+//END MIRROR EDITS
+
 int thermodynamics_timescale(
                              double mz,
                              void * thermo_parameters_and_workspace,
@@ -2978,6 +3444,85 @@ int thermodynamics_sources(
   return _SUCCESS_;
 }
 
+//START MIRROR EDITS
+int dark_thermodynamics_sources(
+                           double mz,
+                           double * d_y,
+                           double * d_dy,
+                           int index_z,
+                           void * thermo_parameters_and_workspace,
+                           ErrorMsg error_message
+                           ) {
+
+  double z;
+  double dark_x,dark_Tmat,dark_Trad,dark_dTmat,dark_x_previous;
+  double weight,s;
+  struct thermodynamics_parameters_and_workspace * ptpaw;
+  struct background* pba;
+  struct thermodynamics * pth;
+  struct thermo_workspace * ptw;
+  struct dark_thermo_diffeq_workspace * d_ptdw;
+  struct dark_thermo_vector * d_ptv;
+  int dark_ap_current;
+
+  z = -mz;
+
+    /* Structs */
+  ptpaw = thermo_parameters_and_workspace;
+  pba = ptpaw->pba;
+  pth = ptpaw->pth;
+  /* Thermo workspace & vector */
+  ptw = ptpaw->ptw;
+  d_ptdw = ptw->d_ptdw;
+  d_ptv = d_ptdw->d_ptv;
+
+  dark_ap_current = d_ptdw->dark_ap_current;
+
+  class_call(dark_thermodynamics_derivs(mz,d_y,d_dy,thermo_parameters_and_workspace,error_message),
+             error_message,
+             error_message);
+
+
+  dark_Trad = ptw->Tadr*(1.+z);
+  dark_Tmat = d_y[d_ptv->index_ti_dark_D_Tmat] + dark_Trad;
+  dark_dTmat = -d_dy[d_ptv->index_ti_dark_D_Tmat] + dark_Trad/(1.+z);
+
+   //printf("%e\n",d_y[d_ptv->index_ti_dark_D_Tmat]);
+
+  dark_x = d_ptdw->dark_x_noreio;
+
+  if ((dark_ap_current != 0) && (z > d_ptdw->dark_ap_z_limits[dark_ap_current-1]-2.*d_ptdw->dark_ap_z_limits_delta[dark_ap_current])) {
+
+    class_call(dark_thermodynamics_ionization_fractions(z,d_y,pba,pth,ptw,dark_ap_current-1),
+               pth->error_message,
+               error_message);
+
+    dark_x_previous = d_ptdw->dark_x_noreio;
+
+    // get s from 0 to 1
+    s = (d_ptdw->dark_ap_z_limits[dark_ap_current-1]-z)/(2.*d_ptdw->dark_ap_z_limits_delta[dark_ap_current]);
+    // infer f2(x) = smooth function interpolating from 0 to 1
+    weight = f2(s);
+    /* get smoothed x */
+    dark_x = weight*dark_x+(1.-weight)*dark_x_previous;
+
+  }
+
+  pth->thermodynamics_table[(pth->tt_size-index_z-1)*pth->th_size+pth->index_th_dark_xe] = dark_x;
+
+  pth->thermodynamics_table[(pth->tt_size-index_z-1)*pth->th_size+pth->index_th_dark_T_adm] = dark_Tmat;
+
+  //pth->thermodynamics_table[(pth->tt_size-index_z-1)*pth->th_size + pth->index_th_T_idr] = pba->T_idr*(1.+z);
+
+  pth->thermodynamics_table[(pth->tt_size-index_z-1)*pth->th_size + pth->index_th_dark_cb2]  = _k_B_ / ( _c_ * _c_ * _dark_m_H_ )* (1. + dark_x) * dark_Tmat * (1. + (1.+z) * dark_dTmat / dark_Tmat / 3);
+  //printf("%e\n",dark_Tmat);
+  pth->thermodynamics_table[(pth->tt_size-index_z-1)*pth->th_size + pth->index_th_dark_dkappa]  = ((1.+z) * (1.+z) * ptw->SIunit_dark_nH0 * dark_x * _dark_sigma_ * _Mpc_over_m_);
+ 
+  //pth->thermodynamics_table[(pth->tt_size-index_z-1)*pth->th_size + pth->index_th_dmu_idm_dr] = ((1.+z) * (1.+z) * ptw->SIunit_dark_nH0 * dark_x * _dark_sigma_ * _Mpc_over_m_);;
+
+}
+//END MIRROR EDITS
+
 /**
  * Get the optical depth of reionization tau_reio for a given thermodynamical history.
  *
@@ -3083,6 +3628,19 @@ int thermodynamics_reionization_get_tau(
  * @param tv        Input: pointer to thermo_vector structure to be freed
  * @return the error status
  */
+
+//START MIRROR EDIT
+int dark_thermodynamics_vector_free(
+                               struct dark_thermo_vector * tv
+                               ) {
+  free(tv->d_y);
+  free(tv->d_dy);
+  free(tv->d_used_in_output);
+  free(tv);
+
+  return _SUCCESS_;
+}
+//END MIRROR EDIT
 
 int thermodynamics_vector_free(
                                struct thermo_vector * tv
@@ -4070,6 +4628,53 @@ int thermodynamics_ionization_fractions(
   return _SUCCESS_;
 }
 
+//START MIRROR EDIT
+int dark_thermodynamics_ionization_fractions(
+                                        double z,
+                                        double * d_y,
+                                        struct background * pba,
+                                        struct thermodynamics * pth,
+                                        struct thermo_workspace * ptw,
+                                        int current_dark_ap
+                                        ) {
+  
+  //printf("Top of ionization\n\n");	
+  /** Define local variables */
+  struct dark_thermo_diffeq_workspace * d_ptdw = ptw->d_ptdw;
+  struct dark_thermo_vector * d_ptv = d_ptdw->d_ptv;
+
+  /* Thermo quantities */
+  double dark_x_H, dark_x=0., dark_Tmat;
+  /* Analytical quantities */
+  double rhs, sqrt_val;
+
+  dark_Tmat = d_y[d_ptv->index_ti_dark_D_Tmat] + ptw->Tadr*(1.+z);
+
+  if (current_dark_ap == d_ptdw->index_dark_ap_saha) {
+
+    rhs = exp(1.5*log(ptw->const_NR_dark_numberdens*dark_Tmat/(1.+z)/(1.+z)) - ptw->const_dark_Tion_H/dark_Tmat)/ptw->SIunit_dark_nH0;
+
+    dark_x_H = 2./(1.+sqrt(1.+4./rhs));
+
+    dark_x = dark_x_H;
+    d_ptdw->dark_x_H = dark_x_H;
+
+  }
+  else if (current_dark_ap == d_ptdw->index_dark_ap_bolt) {
+
+    dark_x_H = d_y[d_ptv->index_ti_dark_x_H];
+
+    dark_x = dark_x_H;
+    d_ptdw->dark_x_H = dark_x_H;
+
+  }
+
+  d_ptdw->dark_x_noreio = dark_x;
+  return _SUCCESS_;
+}
+//END MIRROR EDIT
+
+
 /**
  * This subroutine contains the reionization function \f$ X_e(z) \f$ (one for each scheme) and gives x for a given z.
  *
@@ -4329,6 +4934,17 @@ int thermodynamics_output_titles(
   class_store_columntitle(titles,"dTb [K]",_TRUE_);
   class_store_columntitle(titles,"w_b",_TRUE_);
   class_store_columntitle(titles,"c_b^2",_TRUE_);
+
+  //START MIRROR EDIT
+  if (pba->has_adm == _TRUE_){
+    class_store_columntitle(titles,"dark_x_e",_TRUE_);
+    class_store_columntitle(titles,"T_adm",_TRUE_);
+    class_store_columntitle(titles,"dark_wb",_TRUE_);
+    class_store_columntitle(titles,"dark_cb2",_TRUE_);
+    class_store_columntitle(titles,"dark_dkappa",_TRUE_);
+  }
+  //END MIRROR EDIT
+
   if (pba->has_idm == _TRUE_) {
     class_store_columntitle(titles,"T_idm [K]",_TRUE_);
     class_store_columntitle(titles,"c_idm^2",_TRUE_);
@@ -4407,6 +5023,17 @@ int thermodynamics_output_data(
     class_store_double(dataptr,pvecthermo[pth->index_th_dTb],_TRUE_,storeidx);
     class_store_double(dataptr,pvecthermo[pth->index_th_wb],_TRUE_,storeidx);
     class_store_double(dataptr,pvecthermo[pth->index_th_cb2],_TRUE_,storeidx);
+    //START MIRROR EDITS
+    if (pba->has_adm == _TRUE_){
+      class_store_double(dataptr,pvecthermo[pth->index_th_dark_xe],_TRUE_,storeidx);
+      class_store_double(dataptr,pvecthermo[pth->index_th_dark_T_adm],_TRUE_,storeidx);
+      class_store_double(dataptr,pvecthermo[pth->index_th_dark_wb],_TRUE_,storeidx);
+      class_store_double(dataptr,pvecthermo[pth->index_th_dark_cb2],_TRUE_,storeidx);
+      class_store_double(dataptr,pvecthermo[pth->index_th_dark_dkappa],_TRUE_,storeidx);
+      //class_store_double(dataptr,pvecthermo[pth->index_th_dark_ddkappa],_TRUE_,storeidx);
+      //class_store_double(dataptr,pvecthermo[pth->index_th_dark_dddkappa],_TRUE_,storeidx);
+    }
+    //END MIRROR EDITS
     if (pba->has_idm == _TRUE_) {
       class_store_double(dataptr,pvecthermo[pth->index_th_T_idm],_TRUE_,storeidx);
       class_store_double(dataptr,pvecthermo[pth->index_th_c2_idm],_TRUE_,storeidx);

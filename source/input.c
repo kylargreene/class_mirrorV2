@@ -2308,7 +2308,7 @@ int input_read_parameters_species(struct file_content * pfc,
   double Omega_tot;
   double sigma_B; // Stefan-Boltzmann constant
   double stat_f_idr = 7./8.;
-  double f_cdm=1., f_idm=0.;
+  double f_cdm=1., f_idm=0., f_adm=0.;
   short has_m_budget = _FALSE_, has_cdm_userdefined = _FALSE_;
   double Omega_m_remaining = 0.;
 
@@ -2950,7 +2950,9 @@ int input_read_parameters_species(struct file_content * pfc,
     /* At this point these quantities may or may not be allocated */
     /* If we have perturbations, everything is alright, go ahead and allocate default values */
     if (ppt->has_perturbations) {
+      //MIRROR EDIT
       if (flag1 == _TRUE_){
+	      printf("\nflag one \n");
         if (ppt->perturbations_verbose > 0) {
           class_test(entries_read > ppr->l_max_idr-1,
                      errmsg,
@@ -3090,6 +3092,126 @@ int input_read_parameters_species(struct file_content * pfc,
 
   /* ** ADDITIONAL SPECIES ** */
 
+  // START MIRROR EDIT
+  
+      class_call(parser_read_list_of_doubles(pfc,"alpha_idm_dr",&entries_read,&(ppt->alpha_idm_dr),&flag1,errmsg),
+               errmsg,
+               errmsg);
+
+    if (flag1 == _TRUE_){
+        if (entries_read < (ppr->l_max_idr-1)){
+          class_realloc(ppt->alpha_idm_dr,ppt->alpha_idm_dr,(ppr->l_max_idr-1)*sizeof(double),errmsg);
+          for (n=entries_read; n<(ppr->l_max_idr-1); n++) ppt->alpha_idm_dr[n] = ppt->alpha_idm_dr[entries_read-1];
+        }
+      }
+      else{
+        /* Allocate default values if we have idm, but the user doesn't provide input */
+        class_alloc(ppt->alpha_idm_dr,(ppr->l_max_idr-1)*sizeof(double),errmsg);
+        for (n=0; n<(ppr->l_max_idr-1); n++) ppt->alpha_idm_dr[n] = 1.5;
+      }
+ 
+      class_alloc(ppt->beta_idr,(ppr->l_max_idr-1)*sizeof(double),errmsg);
+      for (n=0; n<(ppr->l_max_idr-1); n++)
+        ppt->beta_idr[n] = 1.5;
+     
+      // read in the dark proton mass
+  class_call(parser_read_double(pfc,"dark_m_p",&param1,&flag1,errmsg),
+        errmsg,
+        errmsg);
+  if (flag1 == _TRUE_){
+    class_test((param1 < 0.),
+      errmsg,
+      "The dark proton mass must be positive. You asked for dark_m_p=%e",param1);
+    pba->dark_m_p = param1;
+    printf("*-> Dark proton mass ratio: %g.\n",pba->dark_m_p);
+  }
+  // read in dark electron mass
+  class_call(parser_read_double(pfc,"dark_m_e",&param1,&flag1,errmsg),
+        errmsg,
+        errmsg);
+  if (flag1 == _TRUE_){
+    class_test((param1 < 0.),
+      errmsg,
+      "The dark electron mass must be positive. You asked for dark_m_e=%e",param1);
+    pba->dark_m_e = param1;
+    printf("*-> Dark electron mass ratio: %g.\n",pba->dark_m_e);
+
+  }
+  // read in dark fine structure constant
+  class_call(parser_read_double(pfc,"dark_fs",&param1,&flag1,errmsg),
+        errmsg,
+        errmsg);
+  if (flag1 == _TRUE_){
+    class_test((param1 < 0.),
+      errmsg,
+      "The dark analogue of the fine structure constant must be positive! You asked for dark_fs=%e",param1);
+    pba->dark_fs = param1;
+    printf("*-> Dark fine structure ratio: %g.\n",pba->dark_fs);
+  }
+  
+  class_call(parser_read_double(pfc,"f_adm",&param1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+
+  if (flag1 == _TRUE_)
+    f_adm = param1;
+
+  /* ---> if user passes density of idm as a fraction of the CDM one */
+  /* Find Omega_idm from Omega_cdm and f_idm */
+  if (flag1 == _TRUE_) {
+    class_test((f_adm < 0.) || (f_adm > 1.),
+               errmsg,
+               "The fraction of atomic dark matter must be between 0 and 1, you asked for f_adm=%e",param3);
+
+    /* Test if there is enough dark matter left to be converted into idm */
+    class_test(f_adm > f_cdm,
+               errmsg,
+               "There is not enough cold dark matter left (f_cdm = %.10e) that should be treated as idm, is the sum of the {f_adm=%.10e} parameters less or equal to 1?", f_cdm, f_adm);
+
+    f_cdm -= f_adm;
+
+    class_test(abs(f_cdm + f_adm - 1.) > 1e-10,
+             errmsg,
+             "The dark matter species do not add up to the expected value");
+    //printf("f_cdm: %g\n",f_cdm);
+    //printf("f_adm: %g\n",f_adm);
+    if (has_m_budget == _TRUE_) {
+      pba->Omega0_cdm = Omega_m_remaining;
+    }
+   
+    if ( f_adm > 0. ){
+      pba->Omega0_adm = f_adm * pba->Omega0_cdm;
+    }
+    if ( f_cdm < 1. ){
+      pba->Omega0_cdm = f_cdm * pba->Omega0_cdm;
+    }
+
+      /* When the fraction f_idm is about one, Omega0_cdm can
+      be close to zero, but due to rounding errors it could be slightly
+      negative; correct for this: */
+    if (pba->Omega0_cdm < 0.)
+      pba->Omega0_cdm = 0.;
+      printf("*-> Fraction of dark matter which is atomic: %g.\n",f_adm);
+      //printf("*-> omega_adm: %g.\n",pba->Omega0_adm*pba->h*pba->h);
+      //printf("*-> omega_cdm: %g.\n",pba->Omega0_cdm*pba->h*pba->h);
+  }
+  /* Read */
+  class_call(parser_read_double(pfc,"xi_mirror",&param1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+  if (flag1 == _TRUE_) {
+    pba->T0_adr = param1 * pba->T_cmb;
+    pba->Omega0_adr = pow(pba->T0_adr/pba->T_cmb,4.)*pba->Omega0_g;
+  }
+    printf("*-> Dark sector temperature ratio: %g.\n",param1);
+    printf("*-> Dark sector temperature [K]: %g.\n",pba->T0_adr);
+  
+  // SETTING SOME STUFF FOR PERTURBATIONS
+  pba->Omega0_idr = pba->Omega0_adr;
+  pba->Omega0_idm = pba->Omega0_adm;
+
+  //END MIRROR EDIT
+
 
   /** 7.3) Final consistency checks for dark matter species */
 
@@ -3098,7 +3220,7 @@ int input_read_parameters_species(struct file_content * pfc,
              "The dark matter species do not add up to the expected value");
 
   /* After all the other possibly non-relativistic species have been determined, we can fianlly compute the CDM density */
-  if (has_m_budget == _TRUE_) {
+  if (has_m_budget == _TRUE_ & f_idm > 0 ) {
     pba->Omega0_cdm = Omega_m_remaining;
   }
 
@@ -3111,7 +3233,7 @@ int input_read_parameters_species(struct file_content * pfc,
              "The dark matter species do not add up to the expected value");
   if ( f_idm > 0. )
     pba->Omega0_idm = f_idm * pba->Omega0_cdm;
-  if ( f_cdm < 1. )
+  if ( f_cdm < 1. & f_idm> 0. )
     pba->Omega0_cdm = f_cdm * pba->Omega0_cdm;
 
   /* When the fraction f_idm is about one, Omega0_cdm can
@@ -3162,9 +3284,11 @@ int input_read_parameters_species(struct file_content * pfc,
   Omega_tot += pba->Omega0_b;
   Omega_tot += pba->Omega0_ur;
   Omega_tot += pba->Omega0_cdm;
-  Omega_tot += pba->Omega0_idm;
+  Omega_tot += pba->Omega0_adm;
+  Omega_tot += pba->Omega0_adr;
+  //Omega_tot += pba->Omega0_idm;
   Omega_tot += pba->Omega0_dcdmdr;
-  Omega_tot += pba->Omega0_idr;
+  //Omega_tot += pba->Omega0_idr;
   Omega_tot += pba->Omega0_ncdm_tot;
   /* Step 1 */
   if (flag1 == _TRUE_){
@@ -5691,7 +5815,7 @@ int input_default_params(struct background *pba,
   ppt->three_cvis2_ur=1.;
 
   /** 4) CDM density */
-  pba->Omega0_cdm = 0.1201075/pow(pba->h,2);
+  pba->Omega0_cdm = 0.120/pow(pba->h,2);
 
   /** 5) ncdm sector */
   /** 5.a) Number of distinct species */

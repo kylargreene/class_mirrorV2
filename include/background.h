@@ -59,6 +59,17 @@ struct background
 
   //@{
 
+  //START MIRROR EDIT
+  double dark_m_p;  //ratio of the dark proton mass to visible proton mass (=1 indicates same mass)
+  double dark_m_e;  //ratio of the dark electron mass to visible electron mass
+  double dark_fs;   //coupling strength of the U(1) symmetry between dark proton and electron
+  double f_adm;     //fraction of total dark matter which is baryonic
+  double xi_mirror; //temperature ratio of the dark sector compared to visible (=1 indicates same temp)
+  double Omega0_adm;//ratio of atomic dark matter to critical density
+  double Omega0_adr; //ratio of dark photons to critical density
+  double T0_adr;      //temperature of dark sector in [Kelvin]
+  //END MIRROR EDIT
+
   double H0; /**< \f$ H_0 \f$: Hubble parameter (in fact, [\f$H_0/c\f$]) in \f$ Mpc^{-1} \f$ */
   double h;  /**< reduced Hubble parameter */
 
@@ -177,6 +188,11 @@ struct background
   int index_bg_rho_dcdm;      /**< dcdm density */
   int index_bg_rho_dr;        /**< dr density */
 
+  //START MIRROR EDIT
+  int index_bg_rho_adm;       // index for atomic dark matter density
+  int index_bg_rho_adr;       // index for dark photon density
+  //END MIRROR EDIT
+
   int index_bg_phi_scf;       /**< scalar field value */
   int index_bg_phi_prime_scf; /**< scalar field derivative wrt conformal time */
   int index_bg_V_scf;         /**< scalar field potential V */
@@ -282,6 +298,10 @@ struct background
 
 
   //@{
+
+  //START MIRROR EDIT
+  short has_adm;
+  //END MIRROR EDIT
 
   short has_cdm;       /**< presence of cold dark matter? */
   short has_idm;       /**< presence of interacting dark matter with photons, baryons, and idr */
