@@ -375,8 +375,18 @@ struct thermo_vector {
 
   int * used_in_output; /**< boolean array specifying which quantities enter in the calculation of output functions */
 
-};
+  int dark_ti_size;
 
+  int index_ti_dark_x_H;
+  int index_ti_dark_D_Tmat;
+
+  double * d_y;
+  double * d_dy;
+
+  int * d_used_in_output;
+
+};
+/*
 struct dark_thermo_vector {
 
   int dark_ti_size;
@@ -390,7 +400,8 @@ struct dark_thermo_vector {
   int * d_used_in_output;
 
 };
-
+*/
+/*
 struct dark_thermo_diffeq_workspace {
 
   double dark_x;
@@ -419,7 +430,7 @@ struct dark_thermo_diffeq_workspace {
 
   int require_dark_H;
 };
-
+*/
 
 /**
  * Workspace for differential equation of thermodynamics
@@ -468,6 +479,32 @@ struct thermo_diffeq_workspace {
   struct thermo_vector * ptv;       /**< pointer to vector of integrated quantities and their time-derivatives */
   struct thermohyrec * phyrec;     /**< pointer to wrapper of HyRec structure */
   struct thermorecfast * precfast; /**< pointer to wrapper of RecFast structure */
+
+  double dark_x;
+  double dark_x_noreio;
+
+  double dark_Tmat;
+  double dark_x_H;
+  //double Sinv_idm_dr;
+  //double dmu_idm_dr;
+
+  int index_dark_ap_saha;
+  int index_dark_ap_bolt;
+
+  int dark_ap_current;
+  int dark_ap_size;
+
+  double * dark_ap_z_limits;
+  double * dark_ap_z_limits_delta;
+
+  double dark_z_recombination;
+
+  struct thermohyrec * dark_phyrec;
+  struct thermorecfast * dark_precfast;
+
+  //struct dark_thermo_vector * d_ptv;
+
+  int require_dark_H;
 
 };
 
@@ -547,7 +584,7 @@ struct thermo_workspace {
   struct thermo_diffeq_workspace * ptdw;        /**< pointer to workspace for differential equations */
   struct thermo_reionization_parameters * ptrp; /**< pointer to workspace for reionization */
 
-  struct dark_thermo_diffeq_workspace * d_ptdw;
+  //struct dark_thermo_diffeq_workspace * d_ptdw;
 };
 
 /**
@@ -710,7 +747,7 @@ extern "C" {
 
   int thermodynamics_vector_free(struct thermo_vector * tv);
 
-  int dark_thermodynamics_vector_free(struct dark_thermo_vector * tv);
+  //int dark_thermodynamics_vector_free(struct dark_thermo_vector * tv);
 
   int thermodynamics_calculate_conformal_drag_time(struct background* pba,
                                                    struct thermodynamics* pth,
