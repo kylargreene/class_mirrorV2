@@ -68,6 +68,7 @@ int thermodynamics_at_z(
 
   /** - define local variables */
   double x0;
+  double dark_x0;
   /* Dark matter baryon scattering */
   double Vrms_idm_b2, T_diff_idm_b, m_b, FHe;
   /* Varying fundamental constants */
@@ -148,7 +149,7 @@ int thermodynamics_at_z(
     if (pba->has_adm == _TRUE_) {
 
       pth->n_index_idm_dr = 2.;
-      double dark_x0;
+      //double dark_x0;
       //compute ionization fraction, assumed to be constant at large z
       dark_x0 = pth->thermodynamics_table[(pth->tt_size-1)*pth->th_size+pth->index_th_dark_xe];
       pvecthermo[pth->index_th_dark_xe] = dark_x0;
@@ -242,7 +243,7 @@ int thermodynamics_at_z(
         //START MIRROR EDIT        
 	      /* calculate dmu_idm_dr and its derivatives */
         //pvecthermo[pth->index_th_dmu_idm_dr] = pth->a_idm_dr*pow((1.+z)/1.e7,pth->n_index_idm_dr)*pba->Omega0_idm*pow(pba->h,2);
-        pvecthermo[pth->index_th_dmu_idm_dr] = pvecthermo[pth->index_th_dark_dkappa];
+        pvecthermo[pth->index_th_dmu_idm_dr] =(1.+z) * (1.+z) * pth->dark_n_e * dark_x0 * _dark_sigma_*_Mpc_over_m_; //pvecthermo[pth->index_th_dark_dkappa];
 	pvecthermo[pth->index_th_ddmu_idm_dr] =  -pvecback[pba->index_bg_H] * pth->n_index_idm_dr / (1+z) * pvecthermo[pth->index_th_dmu_idm_dr];
         pvecthermo[pth->index_th_dddmu_idm_dr] = (pvecback[pba->index_bg_H]*pvecback[pba->index_bg_H]/ (1.+z) * (pth->n_index_idm_dr - 1.) - pvecback[pba->index_bg_H_prime])
           * pth->n_index_idm_dr / (1.+z) * pvecthermo[pth->index_th_dmu_idm_dr];
@@ -1922,11 +1923,11 @@ int thermodynamics_solve(
                pth->error_message,
                pth->error_message);
   
-    printf("before dark free is called\n");
+    //printf("before dark free is called\n");
     //class_call(dark_thermodynamics_vector_free(ptw->ptdw->ptv),
     //           pth->error_message,
     //           pth->error_message);
-    printf("after dark free is called\n");
+    //printf("after dark free is called\n");
 
 
 }
@@ -2129,8 +2130,6 @@ int thermodynamics_workspace_free(
 
   free(ptw->ptrp->reionization_parameters);
   free(ptw->ptdw);
-  //MIRROR EDIT
-  //free(ptw->ptdw);
   free(ptw->ptrp);
 
   free(ptw);
@@ -2461,9 +2460,9 @@ int dark_thermodynamics_vector_init(struct precision * ppr,
     //printf("dark_x_H %e\n",ptv->y[ptv->index_ti_dark_x_H]);
 
     printf("before ionization vector free\n");
-    //class_call(dark_thermodynamics_vector_free(ptdw->ptv),
-    //           pth->error_message,
-    //           pth->error_message);
+    class_call(thermodynamics_vector_free(ptdw->ptv),
+               pth->error_message,
+               pth->error_message);
     printf("after ionization vector free\n");
 
     ptdw->ptv = ptv;
@@ -3014,9 +3013,9 @@ int thermodynamics_derivs(
 
   /** - Calculate quantities for interacting dark matter */
   if (pba->has_idm == _TRUE_ || pba->has_idr == _TRUE_) {
-    class_call(thermodynamics_idm_quantities(pba, z, y, dy, pth, ptw, pvecback),
-               pth->error_message,
-               pth->error_message);
+    //class_call(thermodynamics_idm_quantities(pba, z, y, dy, pth, ptw, pvecback),
+    //           pth->error_message,
+    //           pth->error_message);
   }
 
   /* Using the following definitions and equations, we derive a few important quantities

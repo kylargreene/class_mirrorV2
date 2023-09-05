@@ -6252,8 +6252,9 @@ int perturbations_approximations(
         ppw->approx[ppw->index_ap_tca_idm_dr] = (int)tca_idm_dr_off;
       }
       else{
-        tau_dmu_idm_dr = 1./ppw->pvecthermo[pth->index_th_dmu_idm_dr];
+        //tau_dmu_idm_dr = 1./ppw->pvecthermo[pth->index_th_dmu_idm_dr];
 
+	tau_dmu_idm_dr = 1./ppw->pvecthermo[pth->index_th_dark_dkappa];
         class_test(tau_dmu_idm_dr < 0.,
                    ppt->error_message,
                    "negative tau_idm_dr=1/dmu_idm_dr=%e at z=%e, conformal time=%e.\n",
@@ -8886,7 +8887,8 @@ int perturbations_derivs(double tau,
     }
     if ((pth->has_idm_dr == _TRUE_)){
       S_idm_dr = 4./3. * pvecback[pba->index_bg_rho_idr]/ pvecback[pba->index_bg_rho_idm];
-      dmu_idm_dr = pvecthermo[pth->index_th_dmu_idm_dr];
+      //dmu_idm_dr = pvecthermo[pth->index_th_dmu_idm_dr];
+      dmu_idm_dr = pvecthermo[pth->index_th_dark_dkappa];
       dmu_idr = pth->b_idr/pth->a_idm_dr*pba->Omega0_idr/pba->Omega0_idm*dmu_idm_dr;
     //MIRROR EDIT NOTE
     }
