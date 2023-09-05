@@ -1920,8 +1920,17 @@ int thermodynamics_solve(
     class_call(thermodynamics_vector_free(ptw->ptdw->ptv),
                pth->error_message,
                pth->error_message);
-  }
+  
+    printf("before dark free is called\n");
+    //class_call(dark_thermodynamics_vector_free(ptw->d_ptdw->d_ptv),
+    //           pth->error_message,
+    //           pth->error_message);
+    printf("after dark free is called\n");
 
+
+}
+  
+  
   free(interval_limit);
   free(mz_output);
 
@@ -2119,6 +2128,8 @@ int thermodynamics_workspace_free(
 
   free(ptw->ptrp->reionization_parameters);
   free(ptw->ptdw);
+  //MIRROR EDIT
+  free(ptw->d_ptdw);
   free(ptw->ptrp);
 
   free(ptw);
@@ -2448,9 +2459,11 @@ int dark_thermodynamics_vector_init(struct precision * ppr,
     d_ptv->d_y[d_ptv->index_ti_dark_x_H] = d_ptdw->dark_x_H;
     //printf("dark_x_H %e\n",d_ptv->d_y[d_ptv->index_ti_dark_x_H]);
 
+    printf("before ionization vector free\n");
     class_call(dark_thermodynamics_vector_free(d_ptdw->d_ptv),
                pth->error_message,
                pth->error_message);
+    printf("after ionization vector free\n");
 
     d_ptdw->d_ptv = d_ptv;
 
@@ -3654,10 +3667,17 @@ int thermodynamics_reionization_get_tau(
 int dark_thermodynamics_vector_free(
                                struct dark_thermo_vector * tv
                                ) {
+  
+  printf("inside the top of dark free\n");
   free(tv->d_y);
+  printf("flag one \n");
   free(tv->d_dy);
+  printf("flag two \n");
   free(tv->d_used_in_output);
+  printf("flag three \n");
   free(tv);
+  printf("flag four \n");
+  printf("inside the bottom of dark free\n");
 
   return _SUCCESS_;
 }

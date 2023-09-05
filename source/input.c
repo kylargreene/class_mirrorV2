@@ -2952,7 +2952,7 @@ int input_read_parameters_species(struct file_content * pfc,
     if (ppt->has_perturbations) {
       //MIRROR EDIT
       if (flag1 == _TRUE_){
-	      printf("\nflag one \n");
+	      //printf("\nflag one \n");
         if (ppt->perturbations_verbose > 0) {
           class_test(entries_read > ppr->l_max_idr-1,
                      errmsg,
