@@ -10546,4 +10546,3 @@ int perturbations_rsa_idr_delta_and_theta(
   return _SUCCESS_;
 
 }
-
