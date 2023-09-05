@@ -2375,6 +2375,15 @@ cdef class Class:
                 value = self.sd.sd_parameter_table[1]
             elif name == 'mu_sd':
                 value = self.sd.sd_parameter_table[2]
+            #START MIRROR EDIT
+            elif name == 'dark_m_p':
+                value = self.ba.dark_m_p
+            elif name == 'dark_m_e':
+                value = self.ba.dark_m_e
+            elif name == 'dark_fs':
+                value = self.ba.dark_fs
+            elif name == 'xi_mirror':
+                value = self.ba.xi_mirror
             else:
                 raise CosmoSevereError("%s was not recognized as a derived parameter" % name)
             derived[name] = value

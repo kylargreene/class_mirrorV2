@@ -4931,7 +4931,7 @@ int perturbations_vector_init(
             /* idr is always free streaming if tca_idm_dr is on */
             if (ppt->idr_nature == idr_free_streaming){
               ppv->y[ppv->index_pt_shear_idr] = ppw->tca_shear_idm_dr;
-              ppv->y[ppv->index_pt_l3_idr] = 6./7.*k*ppv->y[ppv->index_pt_shear_idr]/ppw->pvecthermo[pth->index_th_dmu_idm_dr]/ppt->alpha_idm_dr[1];
+              ppv->y[ppv->index_pt_l3_idr] = 6./7.*k*ppv->y[ppv->index_pt_shear_idr]/ppw->pvecthermo[pth->index_th_dark_dkappa]/ppt->alpha_idm_dr[1];
             }
           }
 
@@ -6248,11 +6248,11 @@ int perturbations_approximations(
     }
 
     if (pth->has_idm_dr == _TRUE_){
-      if (ppw->pvecthermo[pth->index_th_dmu_idm_dr] == 0.){
+      if (ppw->pvecthermo[pth->index_th_dark_dkappa] == 0.){
         ppw->approx[ppw->index_ap_tca_idm_dr] = (int)tca_idm_dr_off;
       }
       else{
-        //tau_dmu_idm_dr = 1./ppw->pvecthermo[pth->index_th_dmu_idm_dr];
+        //tau_dmu_idm_dr = 1./ppw->pvecthermo[pth->index_th_dark_dkappa];
 
 	tau_dmu_idm_dr = 1./ppw->pvecthermo[pth->index_th_dark_dkappa];
         class_test(tau_dmu_idm_dr < 0.,
@@ -6704,7 +6704,7 @@ int perturbations_einstein(
       if (pth->has_idm_dr == _TRUE_) {
         if (ppw->approx[ppw->index_ap_tca_idm_dr] == (int)tca_idm_dr_on){
 
-          shear_idr = 0.5*8./15./ppw->pvecthermo[pth->index_th_dmu_idm_dr]/ppt->alpha_idm_dr[0]*(y[ppw->pv->index_pt_theta_idr]+k2*ppw->pvecmetric[ppw->index_mt_alpha]);
+          shear_idr = 0.5*8./15./ppw->pvecthermo[pth->index_th_dark_dkappa]/ppt->alpha_idm_dr[0]*(y[ppw->pv->index_pt_theta_idr]+k2*ppw->pvecmetric[ppw->index_mt_alpha]);
 
           ppw->rho_plus_p_shear += 4./3.*ppw->pvecback[pba->index_bg_rho_idr]*shear_idr;
         }
@@ -6948,7 +6948,7 @@ int perturbations_total_stress_energy(
         if (ppt->idr_nature == idr_free_streaming){
           if (ppw->approx[ppw->index_ap_tca_idm_dr] == (int)tca_idm_dr_on){
             if (ppt->gauge == newtonian)
-              shear_idr = 0.5 *(8./15./ppw->pvecthermo[pth->index_th_dmu_idm_dr]/ppt->alpha_idm_dr[0]*(y[ppw->pv->index_pt_theta_idr])) ;
+              shear_idr = 0.5 *(8./15./ppw->pvecthermo[pth->index_th_dark_dkappa]/ppt->alpha_idm_dr[0]*(y[ppw->pv->index_pt_theta_idr])) ;
             else
               shear_idr = 0.; /* this is set in perturbations_einstein, so here it's set to 0 */
           }
@@ -8874,7 +8874,7 @@ int perturbations_derivs(double tau,
   if (pba->has_idm == _TRUE_) {
 
     if (ppt->has_idm_soundspeed == _TRUE_) {
-      c2_idm = pvecthermo[pth->index_th_c2_idm];
+      c2_idm = pvecthermo[pth->index_th_dark_cb2];
     }
     else {
       c2_idm = 0.;
@@ -8887,7 +8887,7 @@ int perturbations_derivs(double tau,
     }
     if ((pth->has_idm_dr == _TRUE_)){
       S_idm_dr = 4./3. * pvecback[pba->index_bg_rho_idr]/ pvecback[pba->index_bg_rho_idm];
-      //dmu_idm_dr = pvecthermo[pth->index_th_dmu_idm_dr];
+      //dmu_idm_dr = pvecthermo[pth->index_th_dark_dkappa];
       dmu_idm_dr = pvecthermo[pth->index_th_dark_dkappa];
       dmu_idr = pth->b_idr/pth->a_idm_dr*pba->Omega0_idr/pba->Omega0_idm*dmu_idm_dr;
     //MIRROR EDIT NOTE
