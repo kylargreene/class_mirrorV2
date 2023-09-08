@@ -3123,7 +3123,7 @@ int input_read_parameters_species(struct file_content * pfc,
       errmsg,
       "The dark proton mass must be positive. You asked for dark_m_p=%e",param1);
     pba->dark_m_p = param1;
-    printf("*-> Dark proton mass ratio: %g.\n",pba->dark_m_p);
+    //printf("*-> Dark proton mass ratio: %g.\n",pba->dark_m_p);
   }
   // read in dark electron mass
   class_call(parser_read_double(pfc,"dark_m_e",&param1,&flag1,errmsg),
@@ -3134,7 +3134,7 @@ int input_read_parameters_species(struct file_content * pfc,
       errmsg,
       "The dark electron mass must be positive. You asked for dark_m_e=%e",param1);
     pba->dark_m_e = param1;
-    printf("*-> Dark electron mass ratio: %g.\n",pba->dark_m_e);
+   // printf("*-> Dark electron mass ratio: %g.\n",pba->dark_m_e);
 
   }
   // read in dark fine structure constant
@@ -3146,7 +3146,7 @@ int input_read_parameters_species(struct file_content * pfc,
       errmsg,
       "The dark analogue of the fine structure constant must be positive! You asked for dark_fs=%e",param1);
     pba->dark_fs = param1;
-    printf("*-> Dark fine structure ratio: %g.\n",pba->dark_fs);
+    //printf("*-> Dark fine structure ratio: %g.\n",pba->dark_fs);
   }
   
   class_call(parser_read_double(pfc,"f_adm",&param1,&flag1,errmsg),
@@ -3191,7 +3191,7 @@ int input_read_parameters_species(struct file_content * pfc,
       negative; correct for this: */
     if (pba->Omega0_cdm < 0.)
       pba->Omega0_cdm = 0.;
-      printf("*-> Fraction of dark matter which is atomic: %g.\n",f_adm);
+      //printf("*-> Fraction of dark matter which is atomic: %g.\n",f_adm);
       //printf("*-> omega_adm: %g.\n",pba->Omega0_adm*pba->h*pba->h);
       //printf("*-> omega_cdm: %g.\n",pba->Omega0_cdm*pba->h*pba->h);
   }
@@ -3203,8 +3203,8 @@ int input_read_parameters_species(struct file_content * pfc,
     pba->T0_adr = param1 * pba->T_cmb;
     pba->Omega0_adr = pow(pba->T0_adr/pba->T_cmb,4.)*pba->Omega0_g;
   }
-    printf("*-> Dark sector temperature ratio: %g.\n",param1);
-    printf("*-> Dark sector temperature [K]: %g.\n",pba->T0_adr);
+    //printf("*-> Dark sector temperature ratio: %g.\n",param1);
+    //printf("*-> Dark sector temperature [K]: %g.\n",pba->T0_adr);
   
   // SETTING SOME STUFF FOR PERTURBATIONS
   pba->Omega0_idr = pba->Omega0_adr;

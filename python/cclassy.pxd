@@ -110,6 +110,8 @@ cdef extern from "class.h":
         double z_eq
         double tau_eq
         #MIRROR EDIT
+        double Omega0_adm
+        double Omega0_adr
         double dark_m_p
         double dark_m_e
         double dark_fs

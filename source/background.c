@@ -1003,9 +1003,12 @@ int background_indices(
 
   //START MIRROR EDIT
   pba->has_adm = _FALSE_;
- 
+  //printf("Omega_adm %e\n",pba->Omega0_adm);
+  //printf("whats going on?\n"); 
+
   if (pba->Omega0_adm != 0.){
-    pba->has_adm = _TRUE_;
+     //printf("pba->has adm seems true\n");
+     pba->has_adm = _TRUE_;
   }
 
   //END MIRROR EDIT

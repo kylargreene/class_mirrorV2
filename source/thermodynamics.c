@@ -74,6 +74,8 @@ int thermodynamics_at_z(
   /* Varying fundamental constants */
   double sigmaTrescale = 1., alpha = 1., me = 1.;
 
+  pth->n_index_idm_dr = 2.;
+
   /* The fact that z is in the pre-computed range 0 <= z <= z_initial will be checked in the interpolation routines below. Before
      trying to interpolate, allow the routine to deal with the case z > z_initial: then, all relevant quantities can be extrapolated
      using simple analytic approximations */
@@ -148,7 +150,7 @@ int thermodynamics_at_z(
     //START MIRROR EDIT
     if (pba->has_adm == _TRUE_) {
 
-      pth->n_index_idm_dr = 2.;
+     // pth->n_index_idm_dr = 2.;
       //double dark_x0;
       //compute ionization fraction, assumed to be constant at large z
       dark_x0 = pth->thermodynamics_table[(pth->tt_size-1)*pth->th_size+pth->index_th_dark_xe];
@@ -379,6 +381,7 @@ int thermodynamics_init(
   pth->has_idm_g = pba->has_idm && (pth->u_idm_g > 0.);
   pth->has_idm_dr = pba->has_idm && (pba->has_idr); //&& pth->a_idm_dr > 0.);
   pth->a_idm_dr = 0.1;
+  pth->b_idr = 0.;
   pth->has_idm_b = pba->has_idm && (pth->cross_idm_b > 0.);
 
   /** - update the user about which recombination code is being run */
@@ -902,7 +905,7 @@ int thermodynamics_workspace_init(
   /* Ionization energy for HeII -- temperature equivalent in Kelvin */
   ptw->const_Tion_HeII = _h_P_*_c_*_L_He2_ion_/_k_B_;
 
-  printf("*-> Ionization Energy Ratio (dark/visible): %g\n",ptw->const_Tion_H/ptw->const_dark_Tion_H);
+  //printf("*-> Ionization Energy Ratio (dark/visible): %g\n",ptw->const_Tion_H/ptw->const_dark_Tion_H);
 
   /* the field reionization_optical_depth is computed and filled later */
 
@@ -1008,7 +1011,7 @@ int thermodynamics_workspace_init(
     ptw->ptdw->dark_ap_z_limits[ptw->ptdw->index_dark_ap_saha] = ptw->ptdw->dark_z_recombination;
     ptw->ptdw->dark_ap_z_limits[ptw->ptdw->index_dark_ap_bolt] = 0.;
 
-    printf("*-> Dark sector Saha to Boltzman switch redshift: %g\n",ptw->ptdw->dark_z_recombination);
+    //printf("*-> Dark sector Saha to Boltzman switch redshift: %g\n",ptw->ptdw->dark_z_recombination);
 
     class_alloc(ptw->ptdw->dark_ap_z_limits_delta,ptw->ptdw->dark_ap_size*sizeof(double),pth->error_message);
 
@@ -1692,6 +1695,12 @@ int thermodynamics_solve(
                          ) {
   /** Summary: */
 
+    int index_dark_ap;
+    int dark_interval_number;
+    int index_dark_interval;
+    double * dark_interval_limit;
+
+
   /** - define local variables */
   /* Index of current approximation scheme */
   int index_ap;
@@ -1836,16 +1845,16 @@ int thermodynamics_solve(
 
   //START MIRROR EDITS
 
-  printf("*-> Visible recombination complete.\n");
-
+  //printf("*-> Visible recombination complete.\n");
+  //printf("pba has adm breaking?\n");
   if (pba->has_adm == _TRUE_) {
-    int index_dark_ap;
-    int dark_interval_number;
-    int index_dark_interval;
-    double * dark_interval_limit;
-
+//    int index_dark_ap;
+//    int dark_interval_number;
+//    int index_dark_interval;
+//    double * dark_interval_limit;
+    //printf("before dark interval limit alloc\n");
     class_alloc(dark_interval_limit,(ptw->ptdw->dark_ap_size+1)*sizeof(double),pth->error_message);
-
+    //printf("after dark interval limit alloc\n");
     dark_interval_number = ptw->ptdw->dark_ap_size;
     dark_interval_limit[0] = mz_output[0];
     dark_interval_limit[ptw->ptdw->dark_ap_size] = mz_output[ptw->Nz_tot-1];
@@ -1857,7 +1866,8 @@ int thermodynamics_solve(
     for (index_dark_interval=0; index_dark_interval<dark_interval_number; index_dark_interval++) {
 
       ptw->ptdw->dark_ap_current = index_dark_interval;
-      printf("Current dark interval is %d\n", index_dark_interval);
+      
+      //printf("Current dark interval is %d\n", index_dark_interval);
 
       class_call(dark_thermodynamics_vector_init(ppr,
                                                  pba,
@@ -1866,7 +1876,7 @@ int thermodynamics_solve(
                                                  ptw),
                    pth->error_message,
                    pth->error_message);
-      printf("after vector init\n");
+      //printf("after vector init\n");
       class_call(background_at_z(pba,
                                -dark_interval_limit[index_dark_interval],
                                normal_info,
@@ -1876,7 +1886,7 @@ int thermodynamics_solve(
                pba->error_message,
                pth->error_message);
 
-      printf("after background at z\n");
+      //printf("after background at z\n");
       class_call(generic_evolver(dark_thermodynamics_derivs,
                                  dark_interval_limit[index_dark_interval],
                                  dark_interval_limit[index_dark_interval+1],
@@ -1895,7 +1905,7 @@ int thermodynamics_solve(
                                  pth->error_message),
                  pth->error_message,
                  pth->error_message);
-      printf("after generic evolver\n");
+      //printf("after generic evolver\n");
 
     }
 
@@ -1932,7 +1942,7 @@ int thermodynamics_solve(
 
 }
   
-  
+  free(dark_interval_limit); 
   free(interval_limit);
   free(mz_output);
 
@@ -2404,7 +2414,7 @@ int dark_thermodynamics_vector_init(struct precision * ppr,
 
   double z;
 
-  printf("inside vector init\n");
+  //printf("inside vector init\n");
 
   class_alloc(ptv,sizeof(struct thermo_vector),pth->error_message);
 
@@ -2459,11 +2469,11 @@ int dark_thermodynamics_vector_init(struct precision * ppr,
     ptv->y[ptv->index_ti_dark_x_H] = ptdw->dark_x_H;
     //printf("dark_x_H %e\n",ptv->y[ptv->index_ti_dark_x_H]);
 
-    printf("before ionization vector free\n");
+    //printf("before ionization vector free\n");
     class_call(thermodynamics_vector_free(ptdw->ptv),
                pth->error_message,
                pth->error_message);
-    printf("after ionization vector free\n");
+    //printf("after ionization vector free\n");
 
     ptdw->ptv = ptv;
 
