@@ -116,6 +116,7 @@ cdef extern from "class.h":
         double dark_m_e
         double dark_fs
         double xi_mirror
+        double f_adm
 
     cdef struct thermodynamics:
         ErrorMsg error_message

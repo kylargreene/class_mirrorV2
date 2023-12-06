@@ -2376,6 +2376,8 @@ cdef class Class:
             elif name == 'mu_sd':
                 value = self.sd.sd_parameter_table[2]
             #START MIRROR EDIT
+            elif name == 'f_adm':
+                value = self.ba.f_adm
             elif name == 'dark_m_p':
                 value = self.ba.dark_m_p
             elif name == 'dark_m_e':

@@ -3115,6 +3115,7 @@ int input_read_parameters_species(struct file_content * pfc,
         ppt->beta_idr[n] = 1.5;
      
       // read in the dark proton mass
+  /*
   class_call(parser_read_double(pfc,"dark_m_p",&param1,&flag1,errmsg),
         errmsg,
         errmsg);
@@ -3125,7 +3126,9 @@ int input_read_parameters_species(struct file_content * pfc,
     pba->dark_m_p = param1;
     //printf("*-> Dark proton mass ratio: %g.\n",pba->dark_m_p);
   }
+  */
   // read in dark electron mass
+  /*
   class_call(parser_read_double(pfc,"dark_m_e",&param1,&flag1,errmsg),
         errmsg,
         errmsg);
@@ -3152,18 +3155,20 @@ int input_read_parameters_species(struct file_content * pfc,
   class_call(parser_read_double(pfc,"f_adm",&param1,&flag1,errmsg),
              errmsg,
              errmsg);
+*/
 
+/*
   if (flag1 == _TRUE_)
     f_adm = param1;
 
-  /* ---> if user passes density of idm as a fraction of the CDM one */
-  /* Find Omega_idm from Omega_cdm and f_idm */
+  // ---> if user passes density of idm as a fraction of the CDM one
+  // Find Omega_idm from Omega_cdm and f_idm 
   if (flag1 == _TRUE_) {
     class_test((f_adm < 0.) || (f_adm > 1.),
                errmsg,
                "The fraction of atomic dark matter must be between 0 and 1, you asked for f_adm=%e",param3);
 
-    /* Test if there is enough dark matter left to be converted into idm */
+    // Test if there is enough dark matter left to be converted into idm 
     class_test(f_adm > f_cdm,
                errmsg,
                "There is not enough cold dark matter left (f_cdm = %.10e) that should be treated as idm, is the sum of the {f_adm=%.10e} parameters less or equal to 1?", f_cdm, f_adm);
@@ -3186,15 +3191,17 @@ int input_read_parameters_species(struct file_content * pfc,
       pba->Omega0_cdm = f_cdm * pba->Omega0_cdm;
     }
 
-      /* When the fraction f_idm is about one, Omega0_cdm can
+      // When the fraction f_idm is about one, Omega0_cdm can
       be close to zero, but due to rounding errors it could be slightly
-      negative; correct for this: */
+      negative; correct for this: 
     if (pba->Omega0_cdm < 0.)
       pba->Omega0_cdm = 0.;
       //printf("*-> Fraction of dark matter which is atomic: %g.\n",f_adm);
       //printf("*-> omega_adm: %g.\n",pba->Omega0_adm*pba->h*pba->h);
       //printf("*-> omega_cdm: %g.\n",pba->Omega0_cdm*pba->h*pba->h);
   }
+
+  */
   /* Read */
   class_call(parser_read_double(pfc,"xi_mirror",&param1,&flag1,errmsg),
              errmsg,
@@ -3202,16 +3209,65 @@ int input_read_parameters_species(struct file_content * pfc,
   if (flag1 == _TRUE_) {
     pba->T0_adr = param1 * pba->T_cmb;
     pba->Omega0_adr = pow(pba->T0_adr/pba->T_cmb,4.)*pba->Omega0_g;
-  }
-    //printf("*-> Dark sector temperature ratio: %g.\n",param1);
-    //printf("*-> Dark sector temperature [K]: %g.\n",pba->T0_adr);
-  
-  // SETTING SOME STUFF FOR PERTURBATIONS
-  pba->Omega0_idr = pba->Omega0_adr;
-  pba->Omega0_idm = pba->Omega0_adm;
 
-  //END MIRROR EDIT
+    pba->dark_m_e = pow(pow(param1,4.)/(pba->h/0.6736),1./3.);
+    pba->dark_m_p = param1;
+    pba->dark_fs  = pow((pba->h/0.6736)/param1,1./6.);
 
+
+    class_call(parser_read_double(pfc,"f_adm",&param2,&flag1,errmsg),
+               errmsg,
+               errmsg);
+    //f_adm = (0.1864167*(pow(pba->h/0.6736,2.)-1.))/(pow(pba->h/0.6736,2.)+0.1864167*(pow(pba->h/0.6736,2.)-1.));
+    f_adm = param2;
+
+    //printf("*-> Dark proton mass ratio: %g.\n",pba->dark_m_p);
+    //printf("*-> Dark electron mass ratio: %g.\n",pba->dark_m_e);
+    //printf("*-> Dark fs ratio: %g.\n",pba->dark_fs);
+    //printf("*-> Dark baryon fraction: %g.\n",f_adm);
+    
+   
+    class_test((f_adm < 0.) || (f_adm > 1.),
+               errmsg,
+               "The fraction of atomic dark matter must be between 0 and 1, you asked for f_adm=%e",param3);
+
+    /* Test if there is enough dark matter left to be converted into idm */
+    class_test(f_adm > f_cdm,
+               errmsg,
+               "There is not enough cold dark matter left (f_cdm = %.10e) that should be treated as idm, is the sum of the {f_adm=%.10e} parameters less or equal to 1?", f_cdm, f_adm);
+
+    f_cdm -= f_adm;
+
+    class_test(abs(f_cdm + f_adm - 1.) > 1e-10,
+             errmsg,
+             "The dark matter species do not add up to the expected value");
+    //printf("f_cdm: %g\n",f_cdm);
+    //printf("f_adm: %g\n",f_adm);
+    if (has_m_budget == _TRUE_) {
+      pba->Omega0_cdm = Omega_m_remaining;
+    }
+    //
+    if ( f_adm > 0. ){
+      pba->Omega0_adm = f_adm * pba->Omega0_cdm;
+    }
+    if ( f_cdm < 1. ){
+      pba->Omega0_cdm = f_cdm * pba->Omega0_cdm;
+    }
+    
+     /* When the fraction f_idm is about one, Omega0_cdm can
+        be close to zero, but due to rounding errors it could be slightly
+     negative; correct for this: */
+    if (pba->Omega0_cdm < 0.)
+      pba->Omega0_cdm = 0.;
+    //printf("*-> Fraction of dark matter which is atomic: %g.\n",f_adm);
+    //printf("*-> omega_adm: %g.\n",pba->Omega0_adm*pba->h*pba->h);
+    //printf("*-> omega_cdm: %g.\n",pba->Omega0_cdm*pba->h*pba->h);
+      // SETTING SOME STUFF FOR PERTURBATIONS
+     pba->Omega0_idr = pba->Omega0_adr;
+     pba->Omega0_idm = pba->Omega0_adm;
+
+    }
+    //
 
   /** 7.3) Final consistency checks for dark matter species */
 
